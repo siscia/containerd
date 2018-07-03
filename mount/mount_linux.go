@@ -17,6 +17,7 @@
 package mount
 
 import (
+	"log"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 
 // Mount to the provided target path
 func (m *Mount) Mount(target string) error {
+	log.Println("Calling Mount")
 	flags, data := parseMountOptions(m.Options)
 
 	// propagation types.
@@ -39,6 +41,7 @@ func (m *Mount) Mount(target string) error {
 		// Initial call applying all non-propagation flags for mount
 		// or remount with changed data
 		if err := unix.Mount(m.Source, target, m.Type, uintptr(oflags), data); err != nil {
+			log.Printf("Error 1\n Source: %v\n target: %v\n type: %v\n flags: %v\n data: %v\n", m.Source, target, m.Type, oflags, data)
 			return err
 		}
 	}
@@ -47,6 +50,7 @@ func (m *Mount) Mount(target string) error {
 		// Change the propagation type.
 		const pflags = ptypes | unix.MS_REC | unix.MS_SILENT
 		if err := unix.Mount("", target, "", uintptr(flags&pflags), ""); err != nil {
+			log.Println("Error 2")
 			return err
 		}
 	}
@@ -54,7 +58,9 @@ func (m *Mount) Mount(target string) error {
 	const broflags = unix.MS_BIND | unix.MS_RDONLY
 	if oflags&broflags == broflags {
 		// Remount the bind to apply read only.
-		return unix.Mount("", target, "", uintptr(oflags|unix.MS_REMOUNT), "")
+		if err := unix.Mount("", target, "", uintptr(oflags|unix.MS_REMOUNT), ""); err != nil {
+			return err
+		}
 	}
 	return nil
 }

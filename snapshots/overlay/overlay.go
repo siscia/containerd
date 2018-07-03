@@ -76,6 +76,7 @@ type snapshotter struct {
 // diffs are stored under the provided root. A metadata file is stored under
 // the root.
 func NewSnapshotter(root string, opts ...Opt) (snapshots.Snapshotter, error) {
+	fmt.Println("Create overlay snapshotter")
 	var config SnapshotterConfig
 	for _, opt := range opts {
 		if err := opt(&config); err != nil {
@@ -115,6 +116,7 @@ func NewSnapshotter(root string, opts ...Opt) (snapshots.Snapshotter, error) {
 // Should be used for parent resolution, existence checks and to discern
 // the kind of snapshot.
 func (o *snapshotter) Stat(ctx context.Context, key string) (snapshots.Info, error) {
+	fmt.Println("Stat-ing on overlay snapshotter")
 	ctx, t, err := o.ms.TransactionContext(ctx, false)
 	if err != nil {
 		return snapshots.Info{}, err
@@ -181,6 +183,7 @@ func (o *snapshotter) Usage(ctx context.Context, key string) (snapshots.Usage, e
 }
 
 func (o *snapshotter) Prepare(ctx context.Context, key, parent string, opts ...snapshots.Opt) ([]mount.Mount, error) {
+	fmt.Println("Prepare on overlay snapshotter")
 	return o.createSnapshot(ctx, snapshots.KindActive, key, parent, opts)
 }
 
@@ -193,6 +196,7 @@ func (o *snapshotter) View(ctx context.Context, key, parent string, opts ...snap
 //
 // This can be used to recover mounts after calling View or Prepare.
 func (o *snapshotter) Mounts(ctx context.Context, key string) ([]mount.Mount, error) {
+	fmt.Println("Mounts on overlay snapshotter")
 	ctx, t, err := o.ms.TransactionContext(ctx, false)
 	if err != nil {
 		return nil, err
@@ -488,6 +492,10 @@ func (o *snapshotter) mounts(s storage.Snapshot) []mount.Mount {
 	for i := range s.ParentIDs {
 		parentPaths[i] = o.upperPath(s.ParentIDs[i])
 	}
+
+	/*
+		It looks like we are mounting again every single subdir as
+	*/
 
 	options = append(options, fmt.Sprintf("lowerdir=%s", strings.Join(parentPaths, ":")))
 	return []mount.Mount{
